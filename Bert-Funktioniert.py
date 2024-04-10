@@ -9,6 +9,7 @@ from sentence_transformers import SentenceTransformer  # Importiert SentenceTran
 from sklearn.decomposition import LatentDirichletAllocation  # Importiert Scikit-Learn - LDA-Modell
 from sklearn.feature_extraction.text import CountVectorizer  # Importiert Scikit-Learn - CountVectorizer
 
+
 # Lädt Englische Stoppwortliste
 stopwortliste = stopwords.words('english')
 
