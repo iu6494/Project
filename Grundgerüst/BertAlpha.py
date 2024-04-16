@@ -1,50 +1,54 @@
-import pandas as pd  # # Importiert Pandas-Bibliothek und nennt sie pd
-import numpy as np  # # Importiert NumPy-Bibliothek und nennt sie np
-import nltk  # Importiert NLTK-Bibliothek
-from nltk.corpus import stopwords  # Importiert NLTK - Stoppwortliste
-from nltk.tokenize import word_tokenize  # Importiert NLTK - Tokenisierer
-from nltk.stem import WordNetLemmatizer  # Importiert NLTK - Lemmatizer
-from sklearn.cluster import KMeans  # # Importiert Scikit-Learn - KMeans-Modell
-from sentence_transformers import SentenceTransformer  # Importiert SentenceTransformer - Modell
-from sklearn.decomposition import LatentDirichletAllocation  # Importiert Scikit-Learn - LDA-Modell
-from sklearn.feature_extraction.text import CountVectorizer  # Importiert Scikit-Learn - CountVectorizer
+import pandas as pd
+import numpy as np
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from sklearn.cluster import KMeans
+from sentence_transformers import SentenceTransformer
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import silhouette_score
+import matplotlib.pyplot as plt
 
-
-# Lädt Englische Stoppwortliste
 stopwortliste = stopwords.words('english')
 
-# Lädt CSV-Datei und füllt NaN-Werte mit leerem String auf
 reports_daten = pd.read_csv('/home/xstarcroftx/Aufgabe 1/studentreports.csv').fillna('')
-
-# Extrahiert Spalte "Reports" aus CSV-Datei "studentreports.csv" und wandelt die Spalte in Liste um
 reports = reports_daten['Reports'].tolist()
 
-# Wandelt jede complaint (einzelne Beschwerde) in Kleinbuchstaben um, lemmatisiert sie und fügt sie der Liste lemmatisierte_reports (Sammlung aller lemmatisierten Beschwerden) hinzu
 lemmatisierer = WordNetLemmatizer()
 lemmatisierte_reports = []
 for complaint in reports:
-    tokens = word_tokenize(complaint.lower())  # Tokenisierung Beschwerdetext und Umwandlung in Kleinbuchstaben
-    lemmatisierte_tokens = [lemmatisierer.lemmatize(token) for token in tokens if token not in stopwortliste]  # Lemmatisierung der Tokens, entfernen von Stoppwörtern
-    lemmatisierte_report = ' '.join(lemmatisierte_tokens)  # Zusammenfügen der lemmatisierten Tokens zu einem String
-    lemmatisierte_reports.append(lemmatisierte_report)  # Hinzufügen des lemmatisierten Beschwerdetextes zur Liste
+    tokens = word_tokenize(complaint.lower())
+    lemmatisierte_tokens = [lemmatisierer.lemmatize(token) for token in tokens if token not in stopwortliste]
+    lemmatisierte_report = ' '.join(lemmatisierte_tokens)
+    lemmatisierte_reports.append(lemmatisierte_report)
 
-# BERT-Modell laden
-model = SentenceTransformer('bert-base-nli-mean-tokens')  # Lädt BERT-Modell als model
+model = SentenceTransformer('bert-base-nli-mean-tokens')
+report_embeddings = model.encode(lemmatisierte_reports)
 
-# Transformierte Texte in dichten Vektorraum
-report_embeddings = model.encode(lemmatisierte_reports)  # Wendet BERT-MOdell an um Vektordarstellung für Beschwerdetexte zu erzeugen
+# Elbow-Methode zur Bestimmung der optimalen Anzahl von Clustern
+range_of_clusters = range(2, 5)
+sse = []
 
-# Führt KMeans-Clustering durch
-num_clusters = 10  # Anzahl der Cluster
-kmeans = KMeans(num_clusters, random_state=1)  # Initialisierung KMeans-Modell /Erstellt KMeans-Objekt (mit random_state für reprodzierbare Ergebnisse)
-kmeans.fit(report_embeddings)  # Passt KMeans-Modell an Vektordarstellung (welche durch BERT erzeugt wurde) an
+for num_clusters in range_of_clusters:
+    kmeans = KMeans(n_clusters=num_clusters, random_state=1)
+    kmeans.fit(report_embeddings)
+    sse.append(kmeans.inertia_)  # Summe der quadratischen Abstände innerhalb der Cluster
+
+# Bestimme die optimale Anzahl von Clustern
+optimal_num_clusters = np.argmin(sse) + 2  # Index des minimalen SSE + 2 (da wir bei 2 Clustern anfangen)
+
+# Führe KMeans-Clustering mit der optimalen Anzahl von Clustern durch
+kmeans = KMeans(n_clusters=optimal_num_clusters, random_state=1)
+kmeans.fit(report_embeddings)
 
 # weist jeder einzelnen Beschwerde (complaint) aus der CSV-Datei eine Nummer zu die ein Thema repräsentiert
 cluster_labels = kmeans.labels_
 
 # Cluster in Text umwandeln
 clustered_reports = {} # erstellt leeres Dictionary 
-for cluster_idx in range(num_clusters):  # Iteriert über Clusteranzahl
+for cluster_idx in range(optimal_num_clusters):  # Iteriert über Clusteranzahl
     clustered_reports[cluster_idx] = []  # Erstellt für jede Clustergruppe eine leere Liste im Dictionary
 
 # Iteriere über die Zuordnung von Beschwerden zu Clustern und füge die Beschwerden den entsprechenden Clustern im Dictionary hinzu
@@ -88,5 +92,3 @@ def Topwords_per_cluster(clustered_reports, num_topics=1, num_words=3):
 
 # Ausgabe der Top-Wörter jedes Clusters
 Topwords_per_cluster(clustered_reports)  # Aufruf der Funktion zum Ausgeben der Top-Wörter jedes Clusters
-
-
