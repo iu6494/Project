@@ -105,7 +105,7 @@ def Topwords_per_cluster(clustered_reports, num_topics=5, num_words=10):
     print() # Leerzeile für bessere Lesbarkeit
 
     for topic_idx, topic in enumerate(lda.components_): # For-Schleife, die über jedes Thema (topic) in der topic_word_matrix iteriert und gleichzeitig den Index jedes Themas (topic_idx) verfolgt."
-        top_words_idx = topic.argsort()[:-3 - 1:-1] # sortiert die Indizes der Wörter im Thema (topic) in absteigender Reihenfolge basierend auf ihren Wahrscheinlichkeiten und wählt dann die ersten drei Indizes aus, die den höchsten Wahrscheinlichkeiten entsprechen.
+        top_words_idx = topic.argsort()[:-num_words - 1:-1] # sortiert die Indizes der Wörter im Thema (topic) in absteigender Reihenfolge basierend auf ihren Wahrscheinlichkeiten und wählt dann die ersten drei Indizes aus, die den höchsten Wahrscheinlichkeiten entsprechen.
         top_words = [feature_names[i] for i in top_words_idx] # Extrahiert die Top-Wörter aus feature_names (Codezeile 102) basierend auf den Indizes in top_words_idx (also den letzten 3 Top-Themen Codezeile 108)
         print("Topic " + str(topic_idx) + ": " + ', '.join(top_words)) # Ausgabe der Top-Wörter für jedes Thema im Cluster
 
